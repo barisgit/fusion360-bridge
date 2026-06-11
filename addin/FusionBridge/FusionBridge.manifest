@@ -1,0 +1,13 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "addin",
+    "id": "8f1c9a2e-4b7d-4e3a-9c5f-fusionbridge",
+    "author": "blaz",
+    "description": {
+        "": "Local HTTP bridge for AI agents: execute Fusion API Python and capture screenshots via localhost."
+    },
+    "version": "0.1.0",
+    "runOnStartup": true,
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}
