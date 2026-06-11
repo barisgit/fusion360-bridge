@@ -6,6 +6,8 @@ Runs inside Fusion 360's embedded Python. Exposes:
                        thread with adsk.core/adsk.fusion preloaded. Returns
                        {ok, stdout, error}.
   GET  /screenshot  -> PNG of the active viewport.
+  GET  /docs?q=...  -> search the adsk API by name: classes, members,
+                       signatures, docstrings (introspection, offline).
 
 Auth: Bearer token from $XDG_STATE_HOME/fusion-bridge/secret
 (default ~/.local/state/fusion-bridge/secret), auto-created on first run.
@@ -79,9 +81,11 @@ class _ExecuteHandler(adsk.core.CustomEventHandler):
                 if job["kind"] == "execute":
                     result = _run_script(job["script"])
                 elif job["kind"] == "screenshot":
-                    result = _take_screenshot()
+                    result = _take_screenshot(job.get("width", 0), job.get("height", 0))
                 elif job["kind"] == "health":
                     result = _health()
+                elif job["kind"] == "docs":
+                    result = _api_docs(job["query"], job.get("member"))
             except Exception:
                 result = {"ok": False, "error": traceback.format_exc()}
             reply.put(result)
@@ -102,18 +106,64 @@ def _run_script(script):
         return {"ok": False, "stdout": buf.getvalue(), "error": traceback.format_exc()}
 
 
-def _take_screenshot():
+def _take_screenshot(width=0, height=0):
     import tempfile
 
     app = adsk.core.Application.get()
-    path = os.path.join(tempfile.gettempdir(), "fusion_bridge_shot.png")
+    fd, path = tempfile.mkstemp(prefix="fusion_bridge_", suffix=".png")
+    os.close(fd)
     vp = app.activeViewport
     if vp is None:
         return {"ok": False, "error": "no active viewport"}
-    vp.saveAsImageFile(path, 0, 0)  # 0,0 = current viewport size
-    with open(path, "rb") as f:
-        data = f.read()
+    try:
+        vp.saveAsImageFile(path, width, height)  # 0,0 = current viewport size
+        with open(path, "rb") as f:
+            data = f.read()
+    finally:
+        with contextlib.suppress(OSError):
+            os.remove(path)
     return {"ok": True, "_png": data}
+
+
+def _api_docs(query, member=None, max_results=8):
+    """Introspect adsk.core/adsk.fusion/adsk.cam for classes matching query."""
+    import inspect
+
+    q = query.lower()
+    mods = [adsk.core, adsk.fusion]
+    try:
+        import adsk.cam
+        mods.append(adsk.cam)
+    except ImportError:
+        pass
+
+    matches = []
+    for mod in mods:
+        for name, obj in vars(mod).items():
+            if inspect.isclass(obj) and q in name.lower():
+                matches.append((name, obj, mod.__name__))
+    # exact match first, then shorter names first
+    matches.sort(key=lambda m: (m[0].lower() != q, len(m[0])))
+    matches = matches[:max_results]
+
+    out = []
+    for name, cls, modname in matches:
+        entry = {"class": f"{modname}.{name}", "doc": inspect.getdoc(cls) or ""}
+        members = []
+        for mname, mobj in inspect.getmembers(cls):
+            if mname.startswith("_"):
+                continue
+            if member and member.lower() not in mname.lower():
+                continue
+            kind = "property" if isinstance(mobj, property) else "method"
+            mdoc = inspect.getdoc(mobj) or ""
+            members.append({"name": mname, "kind": kind, "doc": mdoc[:500]})
+        if member:
+            entry["members"] = members
+        else:
+            entry["members"] = [m["name"] for m in members]
+        out.append(entry)
+    return {"ok": True, "results": out}
 
 
 def _health():
@@ -156,10 +206,33 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self._authed():
             return self._send_json(401, {"ok": False, "error": "unauthorized"})
-        if self.path == "/health":
+        from urllib.parse import urlparse, parse_qs
+
+        parsed = urlparse(self.path)
+        if parsed.path == "/health":
             return self._send_json(200, _dispatch({"kind": "health"}, timeout=10))
-        if self.path == "/screenshot":
-            res = _dispatch({"kind": "screenshot"}, timeout=30)
+        if parsed.path == "/docs":
+            q = parse_qs(parsed.query)
+            query = (q.get("q") or [""])[0]
+            if not query:
+                return self._send_json(400, {"ok": False, "error": "missing ?q="})
+            member = (q.get("member") or [None])[0]
+            return self._send_json(
+                200, _dispatch({"kind": "docs", "query": query, "member": member}, timeout=20)
+            )
+        if parsed.path == "/screenshot":
+            q = parse_qs(parsed.query)
+
+            def _int(name):
+                try:
+                    return max(0, int(q[name][0]))
+                except (KeyError, ValueError, IndexError):
+                    return 0
+
+            res = _dispatch(
+                {"kind": "screenshot", "width": _int("width"), "height": _int("height")},
+                timeout=30,
+            )
             if res.get("ok") and "_png" in res:
                 png = res["_png"]
                 self.send_response(200)
@@ -214,6 +287,7 @@ def stop(context):
     with contextlib.suppress(Exception):
         if _server:
             _server.shutdown()
+            _server.server_close()
             _server = None
     with contextlib.suppress(Exception):
         _app.unregisterCustomEvent(EVENT_ID)

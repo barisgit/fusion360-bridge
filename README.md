@@ -20,7 +20,7 @@ Add to your MCP client config (pin a tag for reproducible installs):
 ```json
 "fusion360": {
   "command": "uvx",
-  "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge@v0.2.2",
+  "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge@v0.3.0",
            "fusion360-bridge", "serve"]
 }
 ```

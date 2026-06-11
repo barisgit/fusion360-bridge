@@ -194,7 +194,7 @@ wheels = [
 
 [[package]]
 name = "fusion360-bridge"
-version = "0.2.0"
+version = "0.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

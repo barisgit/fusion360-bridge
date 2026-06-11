@@ -75,9 +75,39 @@ def fusion_execute_python(script: str) -> str:
 
 
 @mcp.tool()
-def fusion_screenshot() -> Image:
-    """Capture a PNG screenshot of the active Fusion 360 viewport."""
-    r = httpx.get(f"{HOST}/screenshot", headers=_headers(), timeout=60)
+def fusion_api_docs(query: str, member: str = "") -> str:
+    """Search the Fusion 360 Python API by introspection (offline, exact).
+
+    Finds classes in adsk.core/adsk.fusion/adsk.cam whose name contains
+    `query` and lists their members. Pass `member` to filter to matching
+    methods/properties with docstrings and signatures.
+
+    Examples:
+        fusion_api_docs("ExtrudeFeatures")              -> class + member list
+        fusion_api_docs("ExtrudeFeatures", "createInput") -> full docs for member
+    """
+    try:
+        params = {"q": query}
+        if member:
+            params["member"] = member
+        r = httpx.get(f"{HOST}/docs", headers=_headers(), params=params, timeout=30)
+        return r.text
+    except httpx.ConnectError:
+        return NOT_RUNNING.format(host=HOST)
+
+
+@mcp.tool()
+def fusion_screenshot(width: int = 0, height: int = 0) -> Image:
+    """Capture a PNG screenshot of the active Fusion 360 viewport.
+
+    width/height of 0 means current viewport size.
+    """
+    params = {}
+    if width:
+        params["width"] = width
+    if height:
+        params["height"] = height
+    r = httpx.get(f"{HOST}/screenshot", headers=_headers(), params=params, timeout=60)
     r.raise_for_status()
     return Image(data=r.content, format="png")
 
