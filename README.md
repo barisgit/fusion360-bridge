@@ -52,3 +52,22 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7654/screenshot -o sh
   onto the main thread via `adsk.core.CustomEvent` and waits for the reply.
 - `/execute` runs arbitrary code inside Fusion by design. The bearer token
   and 127.0.0.1 bind are the protection; don't weaken them.
+
+## Portable install (any machine)
+
+```bash
+# 1. Install the Fusion add-in
+uvx --from git+https://github.com/OWNER/fusion360-bridge fusion360-bridge install-addin
+
+# 2. Enable it in Fusion: Shift+S -> Add-Ins -> FusionBridge -> Run ("Run on Startup")
+
+# 3. MCP client config:
+#    "fusion360": {
+#      "command": "uvx",
+#      "args": ["--from", "git+https://github.com/OWNER/fusion360-bridge",
+#               "fusion360-bridge", "serve"]
+#    }
+
+# Optional sanity check
+uvx --from git+https://github.com/OWNER/fusion360-bridge fusion360-bridge health
+```

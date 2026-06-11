@@ -1,11 +1,7 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["mcp>=1.2.0", "httpx"]
-# ///
 """Stdio MCP server bridging to the FusionBridge add-in over localhost HTTP.
 
 Run with any MCP client as a stdio subprocess:
-    uv run /path/to/fusion_mcp.py
+    uvx --from git+https://github.com/OWNER/fusion360-bridge fusion360-bridge serve
 
 Requires Fusion 360 running with the FusionBridge add-in active.
 """
@@ -86,5 +82,9 @@ def fusion_screenshot() -> Image:
     return Image(data=r.content, format="png")
 
 
-if __name__ == "__main__":
+def run():
     mcp.run()
+
+
+if __name__ == "__main__":
+    run()
