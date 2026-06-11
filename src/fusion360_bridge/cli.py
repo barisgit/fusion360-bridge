@@ -14,6 +14,19 @@ import shutil
 import sys
 
 
+def _addin_source():
+    """Locate the bundled add-in: wheel package data, or repo root in dev."""
+    pkg = importlib.resources.files("fusion360_bridge") / "addin" / "FusionBridge"
+    if pkg.is_dir():
+        return pkg
+    repo = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "addin", "FusionBridge")
+    )
+    if os.path.isdir(repo):
+        return repo
+    return None
+
+
 def _addins_dir():
     system = platform.system()
     if system == "Darwin":
@@ -27,8 +40,38 @@ def _addins_dir():
     sys.exit("Fusion 360 only runs on macOS and Windows.")
 
 
+def ensure_addin_installed():
+    """Install the add-in if absent. Quiet no-op when present or symlinked.
+
+    Called on `serve` startup so a fresh machine needs no separate install
+    step: the manifest has runOnStartup, so the next Fusion launch loads it.
+    """
+    try:
+        dest = os.path.join(_addins_dir(), "FusionBridge")
+    except SystemExit:
+        return
+    if os.path.islink(dest) or os.path.exists(dest):
+        return
+    src = _addin_source()
+    if src is None:
+        return
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    if isinstance(src, str):
+        shutil.copytree(src, dest)
+    else:
+        with importlib.resources.as_file(src) as src_path:
+            shutil.copytree(src_path, dest)
+    print(
+        f"FusionBridge add-in installed to {dest}. "
+        "Restart Fusion 360 (or enable via Shift+S -> Add-Ins -> Run) to activate.",
+        file=sys.stderr,
+    )
+
+
 def install_addin():
-    src = importlib.resources.files("fusion360_bridge") / "addin" / "FusionBridge"
+    src = _addin_source()
+    if src is None:
+        sys.exit("Bundled add-in not found in this installation.")
     dest_root = _addins_dir()
     dest = os.path.join(dest_root, "FusionBridge")
     os.makedirs(dest_root, exist_ok=True)
@@ -39,8 +82,11 @@ def install_addin():
         )
     if os.path.exists(dest):
         shutil.rmtree(dest)
-    with importlib.resources.as_file(src) as src_path:
-        shutil.copytree(src_path, dest)
+    if isinstance(src, str):
+        shutil.copytree(src, dest)
+    else:
+        with importlib.resources.as_file(src) as src_path:
+            shutil.copytree(src_path, dest)
     print(f"Installed add-in to: {dest}")
     print(
         "Now in Fusion 360: Shift+S -> Add-Ins tab -> FusionBridge -> Run "
@@ -88,6 +134,7 @@ def main():
     elif args.command == "health":
         health()
     else:
+        ensure_addin_installed()
         from .server import run
 
         run()

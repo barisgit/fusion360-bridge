@@ -55,19 +55,30 @@ curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7654/screenshot -o sh
 
 ## Portable install (any machine)
 
+Add to any MCP client config (pin a tag for reproducible installs):
+
+```json
+"fusion360": {
+  "command": "uvx",
+  "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge@v0.2.1",
+           "fusion360-bridge", "serve"]
+}
+```
+
+That's it: on first `serve` the bundled add-in is auto-installed into
+Fusion's AddIns folder if missing (the manifest has `runOnStartup`, so the
+next Fusion launch activates it). Manual commands if you prefer:
+
 ```bash
-# 1. Install the Fusion add-in
-uvx --from git+https://github.com/barisgit/fusion360-bridge fusion360-bridge install-addin
+uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.1 fusion360-bridge install-addin
+uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.1 fusion360-bridge health
+```
 
-# 2. Enable it in Fusion: Shift+S -> Add-Ins -> FusionBridge -> Run ("Run on Startup")
+### Updating
 
-# 3. MCP client config:
-#    "fusion360": {
-#      "command": "uvx",
-#      "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge",
-#               "fusion360-bridge", "serve"]
-#    }
+`uvx` caches git builds. To pick up a new version, bump the pinned tag, or
+if tracking the default branch, force a re-fetch:
 
-# Optional sanity check
-uvx --from git+https://github.com/barisgit/fusion360-bridge fusion360-bridge health
+```bash
+uvx --refresh --from git+https://github.com/barisgit/fusion360-bridge fusion360-bridge health
 ```
