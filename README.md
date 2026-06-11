@@ -6,7 +6,7 @@ Autodesk Fusion 360 from any AI agent, no proprietary daemon.
 Two small parts:
 
 - `addin/FusionBridge/` — Fusion 360 add-in. Localhost HTTP API on
-  `127.0.0.1:7654` with bearer-token auth (`~/.fusion-bridge-secret`,
+  `127.0.0.1:7654` with bearer-token auth (`~/.local/state/fusion-bridge/secret`,
   auto-generated). Endpoints: `POST /execute` (run arbitrary Python on
   Fusion's main thread), `GET /screenshot`, `GET /health`.
 - `server/fusion_mcp.py` — stdio MCP server (PEP 723 script, run with
@@ -38,7 +38,7 @@ Two small parts:
 ## Curl usage (no MCP)
 
 ```bash
-TOKEN=$(cat ~/.fusion-bridge-secret)
+TOKEN=$(cat ~/.local/state/fusion-bridge/secret)
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7654/health
 curl -s -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7654/execute \
   -d '{"script": "print(app.version)"}'

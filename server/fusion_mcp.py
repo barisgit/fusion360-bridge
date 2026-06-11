@@ -18,7 +18,8 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.utilities.types import Image
 
 HOST = "http://127.0.0.1:7654"
-SECRET_PATH = os.path.expanduser("~/.fusion-bridge-secret")
+_STATE_HOME = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+SECRET_PATH = os.path.join(_STATE_HOME, "fusion-bridge", "secret")
 
 mcp = FastMCP("fusion360")
 

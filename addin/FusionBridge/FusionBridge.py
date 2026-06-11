@@ -7,7 +7,8 @@ Runs inside Fusion 360's embedded Python. Exposes:
                        {ok, stdout, error}.
   GET  /screenshot  -> PNG of the active viewport.
 
-Auth: Bearer token from ~/.fusion-bridge-secret (auto-created on first run).
+Auth: Bearer token from $XDG_STATE_HOME/fusion-bridge/secret
+(default ~/.local/state/fusion-bridge/secret), auto-created on first run.
 Bind: 127.0.0.1:7654 only.
 
 Fusion's API is not thread-safe: the HTTP server runs on a background
@@ -29,7 +30,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 7654
 EVENT_ID = "FusionBridge_execute"
-SECRET_PATH = os.path.expanduser("~/.fusion-bridge-secret")
+
+
+def _secret_path():
+    state_home = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+    return os.path.join(state_home, "fusion-bridge", "secret")
+
+
+SECRET_PATH = _secret_path()
 
 _app = None
 _handlers = []  # keep refs so Fusion's GC doesn't collect event handlers
@@ -46,6 +54,7 @@ def _load_or_create_secret():
     if os.path.exists(SECRET_PATH):
         with open(SECRET_PATH) as f:
             return f.read().strip()
+    os.makedirs(os.path.dirname(SECRET_PATH), mode=0o700, exist_ok=True)
     token = secrets.token_hex(32)
     fd = os.open(SECRET_PATH, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
