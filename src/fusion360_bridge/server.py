@@ -1,7 +1,7 @@
 """Stdio MCP server bridging to the FusionBridge add-in over localhost HTTP.
 
 Run with any MCP client as a stdio subprocess:
-    uvx --from git+https://github.com/OWNER/fusion360-bridge fusion360-bridge serve
+    uvx --from git+https://github.com/barisgit/fusion360-bridge fusion360-bridge serve
 
 Requires Fusion 360 running with the FusionBridge add-in active.
 """
