@@ -1,6 +1,6 @@
 [project]
 name = "fusion360-bridge"
-version = "0.3.0"
+version = "0.3.1"
 description = "Control Autodesk Fusion 360 from AI agents: stdio MCP server + localhost HTTP add-in"
 readme = "README.md"
 requires-python = ">=3.11"

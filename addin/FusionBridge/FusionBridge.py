@@ -129,11 +129,12 @@ def _api_docs(query, member=None, max_results=8):
     """Introspect adsk.core/adsk.fusion/adsk.cam for classes matching query."""
     import inspect
 
+    import importlib
+
     q = query.lower()
     mods = [adsk.core, adsk.fusion]
     try:
-        import adsk.cam
-        mods.append(adsk.cam)
+        mods.append(importlib.import_module("adsk.cam"))
     except ImportError:
         pass
 
