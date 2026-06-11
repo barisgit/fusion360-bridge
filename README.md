@@ -1,7 +1,7 @@
 # fusion360-bridge
 
-Minimal open replacement for AuraFriday's Fusion-360-MCP-Server: control
-Autodesk Fusion 360 from any AI agent, no proprietary daemon.
+Control Autodesk Fusion 360 from any AI agent: a minimal, fully open
+bridge with no external daemon.
 
 Two small parts:
 
@@ -60,7 +60,7 @@ Add to any MCP client config (pin a tag for reproducible installs):
 ```json
 "fusion360": {
   "command": "uvx",
-  "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge@v0.2.1",
+  "args": ["--from", "git+https://github.com/barisgit/fusion360-bridge@v0.2.2",
            "fusion360-bridge", "serve"]
 }
 ```
@@ -70,8 +70,8 @@ Fusion's AddIns folder if missing (the manifest has `runOnStartup`, so the
 next Fusion launch activates it). Manual commands if you prefer:
 
 ```bash
-uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.1 fusion360-bridge install-addin
-uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.1 fusion360-bridge health
+uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.2 fusion360-bridge install-addin
+uvx --from git+https://github.com/barisgit/fusion360-bridge@v0.2.2 fusion360-bridge health
 ```
 
 ### Updating
